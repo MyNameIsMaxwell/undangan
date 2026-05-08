@@ -143,7 +143,7 @@ export const util = (() => {
      * @param {boolean} [replace=false]
      * @returns {object}
      */
-    const disableButton = (button, message = 'Loading', replace = false) => {
+    const disableButton = (button, message = 'Загрузка', replace = false) => {
         button.disabled = true;
 
         const tmp = button.innerHTML;
@@ -186,7 +186,7 @@ export const util = (() => {
         const data = button.getAttribute('data-copy');
 
         if (!data || data.length === 0) {
-            notify('Nothing to copy').warning();
+            notify('Нечего копировать').warning();
             return;
         }
 
@@ -196,7 +196,7 @@ export const util = (() => {
             await navigator.clipboard.writeText(data);
         } catch {
             button.disabled = false;
-            notify('Failed to copy').error();
+            notify('Не удалось скопировать').error();
             return;
         }
 

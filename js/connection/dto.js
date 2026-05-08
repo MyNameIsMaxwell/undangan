@@ -4,7 +4,7 @@ export const dto = (() => {
      * @param {{ uuid: string, own: string, name: string, presence: boolean, comment: string|null, created_at: string, is_admin: boolean, is_parent: boolean, gif_url: string|null, ip: string|null, user_agent: string|null, comments: ReturnType<getCommentResponse>[], like_count: number }} data
      * @returns {{ uuid: string, own: string, name: string, presence: boolean, comment: string|null, created_at: string, is_admin: boolean, is_parent: boolean, gif_url: string|null, ip: string|null, user_agent: string|null, comments: ReturnType<getCommentResponse>[], like_count: number }}
      */
-    const getCommentResponse = ({ uuid, own, name, presence, comment, created_at, is_admin, is_parent, gif_url, ip, user_agent, comments, like_count }) => {
+    const getCommentResponse = ({ uuid, own, name, presence, comment, created_at, is_admin, is_parent, gif_url, ip, user_agent, timezone, comments, like_count }) => {
         return {
             uuid,
             own,
@@ -17,6 +17,7 @@ export const dto = (() => {
             gif_url,
             ip,
             user_agent,
+            timezone: timezone ?? null,
             comments: comments?.map(getCommentResponse) ?? [],
             like_count: like_count ?? 0,
         };

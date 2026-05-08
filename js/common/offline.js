@@ -28,7 +28,7 @@ export const offline = (() => {
         const el = alert.firstElementChild.firstElementChild;
         el.classList.remove('bg-success');
         el.classList.add('bg-danger');
-        el.firstElementChild.innerHTML = '<i class="fa-solid fa-ban me-2"></i>Koneksi tidak tersedia';
+        el.firstElementChild.innerHTML = '<i class="fa-solid fa-ban me-2"></i>Нет подключения к сети';
     };
 
     /**
@@ -38,7 +38,7 @@ export const offline = (() => {
         const el = alert.firstElementChild.firstElementChild;
         el.classList.remove('bg-danger');
         el.classList.add('bg-success');
-        el.firstElementChild.innerHTML = '<i class="fa-solid fa-cloud me-2"></i>Koneksi tersedia kembali';
+        el.firstElementChild.innerHTML = '<i class="fa-solid fa-cloud me-2"></i>Подключение восстановлено';
     };
 
     /**

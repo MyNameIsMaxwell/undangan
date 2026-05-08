@@ -13,6 +13,7 @@ import { offline } from '../../common/offline.js';
 import { comment } from '../components/comment.js';
 import * as confetti from '../../libs/confetti.js';
 import { pool } from '../../connection/request.js';
+import { localComments } from '../../common/local-comments.js';
 
 export const guest = (() => {
 
@@ -32,10 +33,6 @@ export const guest = (() => {
     const countDownDate = () => {
         const count = (new Date(document.body.getAttribute('data-time').replace(' ', 'T'))).getTime();
 
-        /**
-         * @param {number} num 
-         * @returns {string}
-         */
         const pad = (num) => num < 10 ? `0${num}` : `${num}`;
 
         const day = document.getElementById('day');
@@ -44,40 +41,67 @@ export const guest = (() => {
         const second = document.getElementById('second');
 
         const updateCountdown = () => {
-            const distance = Math.abs(count - Date.now());
+            const now = Date.now();
+            const distance = count - now;
+
+            if (distance < 0) {
+                day.textContent = '00';
+                hour.textContent = '00';
+                minute.textContent = '00';
+                second.textContent = '00';
+                return;
+            }
 
             day.textContent = pad(Math.floor(distance / (1000 * 60 * 60 * 24)));
             hour.textContent = pad(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
             minute.textContent = pad(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)));
             second.textContent = pad(Math.floor((distance % (1000 * 60)) / 1000));
 
-            util.timeOut(updateCountdown, 1000 - (Date.now() % 1000));
+            util.timeOut(updateCountdown, 1000 - (now % 1000));
         };
 
         util.timeOut(updateCountdown);
     };
 
     /**
+     * @returns {{ name1: string|null, name2: string|null }}
+     */
+    const getGuestNames = () => {
+        const params = new URLSearchParams(window.location.search);
+        let name1 = null;
+        let name2 = null;
+
+        const raw = window.location.search.split('to=');
+        if (raw.length > 1 && raw[1].length >= 1) {
+            const val = raw[1].split('&')[0];
+            name1 = window.decodeURIComponent(val);
+        }
+
+        const to2 = params.get('to2');
+        if (to2 && to2.length >= 1) {
+            name2 = window.decodeURIComponent(to2);
+        }
+
+        return { name1, name2 };
+    };
+
+    /**
      * @returns {void}
      */
     const showGuestName = () => {
-        /**
-         * Make sure "to=" is the last query string.
-         * Ex. ulems.my.id/?id=some-uuid-here&to=name
-         */
-        const raw = window.location.search.split('to=');
-        let name = null;
+        const { name1, name2 } = getGuestNames();
 
-        if (raw.length > 1 && raw[1].length >= 1) {
-            name = window.decodeURIComponent(raw[1]);
-        }
-
-        if (name) {
+        if (name1) {
             const guestName = document.getElementById('guest-name');
             const div = document.createElement('div');
             div.classList.add('m-2');
 
-            const template = `<small class="mt-0 mb-1 mx-0 p-0">${util.escapeHtml(guestName?.getAttribute('data-message'))}</small><p class="m-0 p-0" style="font-size: 1.25rem">${util.escapeHtml(name)}</p>`;
+            let namesHtml = `<p class="font-esthetic m-0 p-0" style="font-size: 1.75rem">${util.escapeHtml(name1)}</p>`;
+            if (name2) {
+                namesHtml += `<p class="font-esthetic m-0 p-0" style="font-size: 1.75rem">${util.escapeHtml(name2)}</p>`;
+            }
+
+            const template = `<small class="mt-0 mb-1 mx-0 p-0">${util.escapeHtml(guestName?.getAttribute('data-message'))}</small>${namesHtml}`;
             util.safeInnerHTML(div, template);
 
             guestName?.appendChild(div);
@@ -85,7 +109,16 @@ export const guest = (() => {
 
         const form = document.getElementById('form-name');
         if (form) {
-            form.value = information.get('name') ?? name;
+            form.value = name1 ?? information.get('name') ?? '';
+        }
+
+        const form2 = document.getElementById('form-name-2');
+        if (form2) {
+            form2.value = name2 ?? information.get('name2') ?? '';
+            const form2Container = form2.closest('.mb-3');
+            if (form2Container && !name2 && !information.get('name2')) {
+                form2Container.classList.add('d-none');
+            }
         }
     };
 
@@ -197,7 +230,6 @@ export const guest = (() => {
     const modalImageClick = () => {
         document.getElementById('show-modal-image').addEventListener('click', (e) => {
             const abs = e.currentTarget.parentNode.querySelector('.position-absolute');
-
             abs.classList.contains('d-none')
                 ? abs.classList.replace('d-none', 'd-flex')
                 : abs.classList.replace('d-flex', 'd-none');
@@ -205,14 +237,13 @@ export const guest = (() => {
     };
 
     /**
-     * @param {HTMLDivElement} div 
+     * @param {HTMLDivElement} div
      * @returns {void}
      */
     const showStory = (div) => {
         if (navigator.vibrate) {
             navigator.vibrate(500);
         }
-
         confetti.tapTapAnimation(div, 100);
         util.changeOpacity(div, false).then((e) => e.remove());
     };
@@ -246,20 +277,16 @@ export const guest = (() => {
      * @returns {void}
      */
     const buildGoogleCalendar = () => {
-        /**
-         * @param {string} d 
-         * @returns {string}
-         */
         const formatDate = (d) => (new Date(d.replace(' ', 'T') + ':00Z')).toISOString().replace(/[-:]/g, '').split('.').shift();
 
         const url = new URL('https://calendar.google.com/calendar/render');
         const data = new URLSearchParams({
             action: 'TEMPLATE',
-            text: 'The Wedding of Wahyu and Riski',
-            dates: `${formatDate('2023-03-15 10:00')}/${formatDate('2023-03-15 11:00')}`,
-            details: 'Tanpa mengurangi rasa hormat, kami mengundang Anda untuk berkenan menghadiri acara pernikahan kami. Terima kasih atas perhatian dan doa restu Anda, yang menjadi kebahagiaan serta kehormatan besar bagi kami.',
-            location: 'RT 10 RW 02, Desa Pajerukan, Kec. Kalibagor, Kab. Banyumas, Jawa Tengah 53191.',
-            ctz: config.get('tz'),
+            text: 'Свадьба Максима и Юлии',
+            dates: `${formatDate('2026-07-18 10:00')}/${formatDate('2026-07-18 18:00')}`,
+            details: 'Мы с радостью приглашаем вас разделить с нами этот особенный день.',
+            location: 'Адрес места проведения свадьбы',
+            ctz: config.get('tz') || Intl.DateTimeFormat().resolvedOptions().timeZone,
         });
 
         url.search = data.toString();
@@ -272,19 +299,13 @@ export const guest = (() => {
     const loaderLibs = () => {
         progress.add();
 
-        /**
-         * @param {{aos: boolean, confetti: boolean}} opt
-         * @returns {void}
-         */
         const load = (opt) => {
             loader(opt)
                 .then(() => progress.complete('libs'))
                 .catch(() => progress.invalid('libs'));
         };
 
-        return {
-            load,
-        };
+        return { load };
     };
 
     /**
@@ -306,11 +327,7 @@ export const guest = (() => {
             document.getElementById('information')?.remove();
         }
 
-        // wait until welcome screen is show.
         await util.changeOpacity(document.getElementById('welcome'), true);
-
-        // remove loading screen and show welcome screen.
-        await util.changeOpacity(document.getElementById('loading'), false).then((el) => el.remove());
     };
 
     /**
@@ -330,7 +347,6 @@ export const guest = (() => {
         const aud = audio.init();
         const lib = loaderLibs();
         const token = document.body.getAttribute('data-key');
-        const params = new URLSearchParams(window.location.search);
 
         window.addEventListener('resize', util.debounce(slide));
         document.addEventListener('undangan.progress.done', () => booting());
@@ -350,17 +366,20 @@ export const guest = (() => {
         }
 
         if (token && token.length > 0) {
-            // add 2 progress for config and comment.
-            // before img.load();
+            // Загружаем конфигурацию с сервера
             progress.add();
             progress.add();
 
-            // if don't have data-src.
             if (!img.hasDataSrc()) {
                 img.load();
             }
 
-            session.guest(params.get('k') ?? token).then(({ data }) => {
+            localComments.loadConfig().then((serverConfig) => {
+                // Сохраняем в локальный кэш
+                for (const [k, v] of Object.entries(serverConfig)) {
+                    config.set(k, v);
+                }
+
                 document.dispatchEvent(new Event('undangan.session'));
                 progress.complete('config');
 
@@ -370,13 +389,14 @@ export const guest = (() => {
 
                 vid.load();
                 aud.load();
-                lib.load({ confetti: data.is_confetti_animation });
+                lib.load({ confetti: serverConfig.is_confetti_animation });
 
                 comment.show()
                     .then(() => progress.complete('comment'))
                     .catch(() => progress.invalid('comment'));
-
-            }).catch(() => progress.invalid('config'));
+            }).catch(() => {
+                progress.invalid('config');
+            });
         }
     };
 
@@ -396,13 +416,21 @@ export const guest = (() => {
         }
 
         window.addEventListener('load', () => {
-            pool.init(pageLoaded, [
-                'image',
-                'video',
-                'audio',
-                'libs',
-                'gif',
-            ]);
+            try {
+                if (window.isSecureContext && window.caches) {
+                    pool.init(pageLoaded, [
+                        'image',
+                        'video',
+                        'audio',
+                        'libs',
+                        'gif',
+                    ]);
+                } else {
+                    pageLoaded();
+                }
+            } catch {
+                pageLoaded();
+            }
         });
 
         return {

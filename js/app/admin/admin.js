@@ -1,83 +1,82 @@
 import { auth } from './auth.js';
 import { navbar } from './navbar.js';
 import { util } from '../../common/util.js';
-import { dto } from '../../connection/dto.js';
 import { theme } from '../../common/theme.js';
 import { lang } from '../../common/language.js';
 import { storage } from '../../common/storage.js';
 import { session } from '../../common/session.js';
 import { offline } from '../../common/offline.js';
 import { comment } from '../components/comment.js';
-import { pool, request, HTTP_GET, HTTP_PATCH, HTTP_PUT } from '../../connection/request.js';
+import { pool } from '../../connection/request.js';
+import { localComments } from '../../common/local-comments.js';
 
 export const admin = (() => {
 
     /**
      * @returns {Promise<void>}
      */
-    const getUserStats = () => auth.getDetailUser().then((res) => {
+    const getUserStats = async () => {
+        // Загружаем конфигурацию с сервера
+        const config = await localComments.loadConfig();
 
-        util.safeInnerHTML(document.getElementById('dashboard-name'), `${util.escapeHtml(res.data.name)}<i class="fa-solid fa-hands text-warning ms-2"></i>`);
-        document.getElementById('dashboard-email').textContent = res.data.email;
-        document.getElementById('dashboard-accesskey').value = res.data.access_key;
-        document.getElementById('button-copy-accesskey').setAttribute('data-copy', res.data.access_key);
+        util.safeInnerHTML(document.getElementById('dashboard-name'), `${util.escapeHtml(config.name)}<i class="fa-solid fa-hands text-warning ms-2"></i>`);
+        document.getElementById('dashboard-email').textContent = config.email;
+        document.getElementById('dashboard-accesskey').value = session.getToken() || 'N/A';
+        document.getElementById('button-copy-accesskey').setAttribute('data-copy', session.getToken() || '');
 
-        document.getElementById('form-name').value = util.escapeHtml(res.data.name);
-        document.getElementById('form-timezone').value = res.data.tz;
-        document.getElementById('filterBadWord').checked = Boolean(res.data.is_filter);
-        document.getElementById('confettiAnimation').checked = Boolean(res.data.is_confetti_animation);
-        document.getElementById('replyComment').checked = Boolean(res.data.can_reply);
-        document.getElementById('editComment').checked = Boolean(res.data.can_edit);
-        document.getElementById('deleteComment').checked = Boolean(res.data.can_delete);
-        document.getElementById('dashboard-tenorkey').value = res.data.tenor_key;
+        document.getElementById('form-name').value = util.escapeHtml(config.name);
+        document.getElementById('form-timezone').value = config.tz;
+        document.getElementById('filterBadWord').checked = Boolean(config.is_filter);
+        document.getElementById('confettiAnimation').checked = Boolean(config.is_confetti_animation);
+        document.getElementById('replyComment').checked = Boolean(config.can_reply);
+        document.getElementById('editComment').checked = Boolean(config.can_edit);
+        document.getElementById('deleteComment').checked = Boolean(config.can_delete);
+        document.getElementById('dashboard-tenorkey').value = config.tenor_key || '';
 
-        storage('config').set('tenor_key', res.data.tenor_key);
+        storage('config').set('tenor_key', config.tenor_key);
         document.dispatchEvent(new Event('undangan.session'));
 
-        request(HTTP_GET, '/api/stats').token(session.getToken()).withCache(1000 * 30).withForceCache().send().then((resp) => {
-            document.getElementById('count-comment').textContent = String(resp.data.comments).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            document.getElementById('count-like').textContent = String(resp.data.likes).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            document.getElementById('count-present').textContent = String(resp.data.present).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            document.getElementById('count-absent').textContent = String(resp.data.absent).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        });
+        // Получаем статистику с сервера
+        const stats = await localComments.getStats();
+        document.getElementById('count-comment').textContent = String(stats.comments).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.getElementById('count-like').textContent = String(stats.likes).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.getElementById('count-present').textContent = String(stats.present).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.getElementById('count-absent').textContent = String(stats.absent).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
         comment.show();
-    });
+    };
 
     /**
      * @param {HTMLElement} checkbox
      * @param {string} type
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const changeCheckboxValue = (checkbox, type) => {
+    const changeCheckboxValue = async (checkbox, type) => {
         const label = util.disableCheckbox(checkbox);
 
-        request(HTTP_PATCH, '/api/user')
-            .token(session.getToken())
-            .body({ [type]: checkbox.checked })
-            .send()
-            .finally(() => label.restore());
+        const config = localComments.getConfig();
+        config[type] = checkbox.checked;
+        await localComments.saveConfig(config);
+        label.restore();
     };
 
     /**
      * @param {HTMLButtonElement} button
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const tenor = (button) => {
+    const tenor = async (button) => {
         const btn = util.disableButton(button);
-
         const form = document.getElementById('dashboard-tenorkey');
         form.disabled = true;
 
-        request(HTTP_PATCH, '/api/user')
-            .token(session.getToken())
-            .body({ tenor_key: form.value.length ? form.value : null })
-            .send()
-            .then(() => util.notify(`success ${form.value.length ? 'add' : 'remove'} tenor key`).success())
-            .finally(() => {
-                form.disabled = false;
-                btn.restore();
-            });
+        const config = localComments.getConfig();
+        config.tenor_key = form.value.length ? form.value : null;
+        await localComments.saveConfig(config);
+        storage('config').set('tenor_key', config.tenor_key);
+        util.notify(`Ключ Tenor ${form.value.length ? 'добавлен' : 'удален'}`).success();
+
+        form.disabled = false;
+        btn.restore();
     };
 
     /**
@@ -85,98 +84,81 @@ export const admin = (() => {
      * @returns {void}
      */
     const regenerate = (button) => {
-        if (!util.ask('Are you sure?')) {
-            return;
-        }
-
-        const btn = util.disableButton(button);
-
-        request(HTTP_PUT, '/api/key')
-            .token(session.getToken())
-            .send(dto.statusResponse)
-            .then((res) => {
-                if (!res.data.status) {
-                    return;
-                }
-
-                getUserStats();
-            })
-            .finally(() => btn.restore());
+        util.notify('Ключ доступа — это ваш токен авторизации. Перелогиньтесь для нового токена.').info();
     };
 
     /**
      * @param {HTMLButtonElement} button
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const changePassword = (button) => {
+    const changePassword = async (button) => {
         const old = document.getElementById('old_password');
         const newest = document.getElementById('new_password');
 
         if (old.value.length === 0 || newest.value.length === 0) {
-            util.notify('Password cannot be empty').warning();
+            util.notify('Пароль не может быть пустым').warning();
             return;
         }
 
         old.disabled = true;
         newest.disabled = true;
-
         const btn = util.disableButton(button);
 
-        request(HTTP_PATCH, '/api/user')
-            .token(session.getToken())
-            .body({
-                old_password: old.value,
-                new_password: newest.value,
-            })
-            .send(dto.statusResponse)
-            .then((res) => {
-                if (!res.data.status) {
-                    return;
-                }
+        try {
+            const res = await fetch('/api/auth/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.getToken()}`,
+                },
+                body: JSON.stringify({
+                    old_password: old.value,
+                    new_password: newest.value,
+                }),
+            });
 
+            const json = await res.json();
+
+            if (res.ok) {
                 old.value = null;
                 newest.value = null;
-                util.notify('Success change password').success();
-            })
-            .finally(() => {
-                btn.restore(true);
+                util.notify('Пароль успешно изменен').success();
+            } else {
+                util.notify(json.error?.[0] || 'Ошибка').error();
+            }
+        } catch {
+            util.notify('Ошибка подключения к серверу').error();
+        }
 
-                old.disabled = false;
-                newest.disabled = false;
-            });
+        old.disabled = false;
+        newest.disabled = false;
+        btn.restore(true);
     };
 
     /**
      * @param {HTMLButtonElement} button
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const changeName = (button) => {
+    const changeName = async (button) => {
         const name = document.getElementById('form-name');
 
         if (name.value.length === 0) {
-            util.notify('Name cannot be empty').warning();
+            util.notify('Имя не может быть пустым').warning();
             return;
         }
 
         name.disabled = true;
         const btn = util.disableButton(button);
 
-        request(HTTP_PATCH, '/api/user')
-            .token(session.getToken())
-            .body({ name: name.value })
-            .send(dto.statusResponse)
-            .then((res) => {
-                if (!res.data.status) {
-                    return;
-                }
+        const config = localComments.getConfig();
+        config.name = name.value;
+        await localComments.saveConfig(config);
 
-                util.safeInnerHTML(document.getElementById('dashboard-name'), `${util.escapeHtml(name.value)}<i class="fa-solid fa-hands text-warning ms-2"></i>`);
-                util.notify('Success change name').success();
-            })
-            .finally(() => {
-                name.disabled = false;
-                btn.restore(true);
-            });
+        util.safeInnerHTML(document.getElementById('dashboard-name'), `${util.escapeHtml(name.value)}<i class="fa-solid fa-hands text-warning ms-2"></i>`);
+        util.notify('Имя успешно изменено').success();
+
+        name.disabled = false;
+        btn.restore(true);
     };
 
     /**
@@ -185,11 +167,15 @@ export const admin = (() => {
      */
     const download = (button) => {
         const btn = util.disableButton(button);
-        request(HTTP_GET, '/api/download')
-            .token(session.getToken())
-            .withDownload('download', 'csv')
-            .send()
-            .finally(() => btn.restore());
+        const token = session.getToken();
+        // Скачиваем CSV через прямую ссылку
+        const a = document.createElement('a');
+        a.href = `/api/comments/export?token=${encodeURIComponent(token)}`;
+        a.download = `comments-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        btn.restore();
     };
 
     /**
@@ -208,15 +194,14 @@ export const admin = (() => {
     const enableButtonPassword = () => {
         const btn = document.getElementById('button-change-password');
         const old = document.getElementById('old_password');
-
         if (btn.disabled && old.value.length !== 0) {
             btn.disabled = false;
         }
     };
 
     /**
-     * @param {HTMLFormElement} form 
-     * @param {string|null} [query=null] 
+     * @param {HTMLFormElement} form
+     * @param {string|null} [query=null]
      * @returns {void}
      */
     const openLists = (form, query = null) => {
@@ -231,11 +216,10 @@ export const admin = (() => {
             document.addEventListener('click', (e) => {
                 if (!form.contains(e.currentTarget) && !dropdown.contains(e.currentTarget)) {
                     if (form.value.trim().length <= 0) {
-                        form.setCustomValidity('Timezone cannot be empty.');
+                        form.setCustomValidity('Часовой пояс не может быть пустым.');
                         form.reportValidity();
                         return;
                     }
-
                     form.setCustomValidity('');
                     dropdown.classList.add('d-none');
                 }
@@ -261,72 +245,70 @@ export const admin = (() => {
 
     /**
      * @param {HTMLButtonElement} button
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const changeTz = (button) => {
+    const changeTz = async (button) => {
         const tz = document.getElementById('form-timezone');
 
         if (tz.value.length === 0) {
-            util.notify('Time zone cannot be empty').warning();
+            util.notify('Часовой пояс не может быть пустым').warning();
             return;
         }
 
         if (!Intl.supportedValuesOf('timeZone').includes(tz.value)) {
-            util.notify('Timezone not supported').warning();
+            util.notify('Часовой пояс не поддерживается').warning();
             return;
         }
 
         tz.disabled = true;
         const btn = util.disableButton(button);
 
-        request(HTTP_PATCH, '/api/user')
-            .token(session.getToken())
-            .body({ tz: tz.value })
-            .send(dto.statusResponse)
-            .then((res) => {
-                if (!res.data.status) {
-                    return;
-                }
+        const config = localComments.getConfig();
+        config.tz = tz.value;
+        await localComments.saveConfig(config);
+        storage('config').set('tz', tz.value);
 
-                util.notify('Success change tz').success();
-            })
-            .finally(() => {
-                tz.disabled = false;
-                btn.restore(true);
-            });
+        util.notify('Часовой пояс успешно изменен').success();
+
+        tz.disabled = false;
+        btn.restore(true);
     };
 
     /**
      * @returns {void}
      */
     const logout = () => {
-        if (!util.ask('Are you sure?')) {
+        if (!util.ask('Вы уверены?')) {
             return;
         }
-
-        auth.clearSession();
+        session.logout();
+        window.location.reload();
     };
 
     /**
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    const pageLoaded = () => {
+    const pageLoaded = async () => {
         lang.init();
-        lang.setDefault('en');
+        lang.setDefault('ru');
 
         comment.init();
         offline.init();
         theme.spyTop();
 
-        document.addEventListener('hidden.bs.modal', getUserStats);
+        // Если есть токен — загружаем данные
+        if (session.isAdmin()) {
+            await getUserStats();
+        } else {
+            // Показываем модал логина
+            const { bs } = await import('../../libs/bootstrap.js');
+            bs.modal('mainModal').show();
 
-        const raw = window.location.hash.slice(1);
-        if (raw.length > 0) {
-            session.setToken(raw);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Ждём авторизации
+            document.addEventListener('undangan.admin.authenticated', async () => {
+                await getUserStats();
+            }, { once: true });
         }
-
-        session.isValid() ? getUserStats() : auth.clearSession();
     };
 
     /**
@@ -337,16 +319,17 @@ export const admin = (() => {
         theme.init();
         session.init();
 
-        if (!session.isAdmin()) {
-            storage('owns').clear();
-            storage('likes').clear();
-            storage('config').clear();
-            storage('comment').clear();
-            storage('session').clear();
-            storage('information').clear();
-        }
-
-        window.addEventListener('load', () => pool.init(pageLoaded, ['gif']));
+        window.addEventListener('load', () => {
+            try {
+                if (window.isSecureContext && window.caches) {
+                    pool.init(pageLoaded, ['gif']);
+                } else {
+                    pageLoaded();
+                }
+            } catch {
+                pageLoaded();
+            }
+        });
 
         return {
             util,

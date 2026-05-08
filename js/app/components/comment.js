@@ -7,6 +7,7 @@ import { dto } from '../../connection/dto.js';
 import { lang } from '../../common/language.js';
 import { storage } from '../../common/storage.js';
 import { session } from '../../common/session.js';
+import { localComments } from '../../common/local-comments.js';
 import { request, HTTP_GET, HTTP_POST, HTTP_DELETE, HTTP_PUT, HTTP_STATUS_CREATED } from '../../connection/request.js';
 
 export const comment = (() => {
@@ -35,12 +36,7 @@ export const comment = (() => {
      * @returns {string}
      */
     const onNullComment = () => {
-        const desc = lang
-            .on('id', '📢 Yuk, share undangan ini biar makin rame komentarnya! 🎉')
-            .on('en', '📢 Let\'s share this invitation to get more comments! 🎉')
-            .get();
-
-        return `<div class="text-center p-4 mx-0 mt-0 mb-3 bg-theme-auto rounded-4 shadow"><p class="fw-bold p-0 m-0" style="font-size: 0.95rem;">${desc}</p></div>`;
+        return `<div class="text-center p-4 mx-0 mt-0 mb-3 bg-theme-auto rounded-4 shadow"><p class="fw-bold p-0 m-0" style="font-size: 0.95rem;">💌 Пока пожеланий нет. Будьте первыми!</p></div>`;
     };
 
     /**
@@ -74,7 +70,7 @@ export const comment = (() => {
         const currentShow = showHide.get('show');
 
         button.setAttribute('data-show', isShow ? 'false' : 'true');
-        button.innerText = isShow ? `Show replies (${ids.length})` : 'Hide replies';
+        button.innerText = isShow ? `Скрыть ответы` : `Показать ответы (${ids.length})`;
         showHide.set('show', isShow ? currentShow.filter((i) => i !== uuid) : [...currentShow, uuid]);
 
         for (const id of ids) {
@@ -101,7 +97,7 @@ export const comment = (() => {
         const isCollapsed = anchor.getAttribute('data-show') === 'false';
 
         util.safeInnerHTML(content, util.convertMarkdownToHTML(util.escapeHtml(isCollapsed ? original : original.slice(0, card.maxCommentLength) + '...')));
-        anchor.innerText = isCollapsed ? 'Sebagian' : 'Selengkapnya';
+        anchor.innerText = isCollapsed ? 'Свернуть' : 'Показать полностью';
         anchor.setAttribute('data-show', isCollapsed ? 'true' : 'false');
     };
 
@@ -109,45 +105,10 @@ export const comment = (() => {
      * @param {ReturnType<typeof dto.getCommentResponse>} c
      * @returns {Promise<void>}
      */
-    const fetchTracker = async (c) => {
-        if (c.comments) {
-            await Promise.all(c.comments.map((v) => fetchTracker(v)));
-        }
-
-        if (!c.ip || !c.user_agent || c.is_admin) {
-            return;
-        }
-
-        /**
-         * @param {string} result 
-         * @returns {void}
-         */
-        const setResult = (result) => {
-            const commentIp = document.getElementById(`ip-${util.escapeHtml(c.uuid)}`);
-            util.safeInnerHTML(commentIp, `<i class="fa-solid fa-location-dot me-1"></i>${util.escapeHtml(c.ip)} <strong>${util.escapeHtml(result)}</strong>`);
-        };
-
-        // Free for commercial and non-commercial use.
-        await request(HTTP_GET, `https://apip.cc/api-json/${c.ip}`)
-            .withCache()
-            .withRetry()
-            .default()
-            .then((res) => res.json())
-            .then((res) => {
-                let result = 'localhost';
-
-                if (res.status === 'success') {
-                    if (res.City.length !== 0 && res.RegionName.length !== 0) {
-                        result = res.City + ' - ' + res.RegionName;
-                    } else if (res.Capital.length !== 0 && res.CountryName.length !== 0) {
-                        result = res.Capital + ' - ' + res.CountryName;
-                    }
-                }
-
-                setResult(result);
-            })
-            .catch((err) => setResult(err.message));
-    };
+    /**
+     * fetchTracker удалён - для локального режима не используется IP-отслеживание
+     */
+    const fetchTracker = async () => { };
 
     /**
      * @param {ReturnType<typeof dto.getCommentsResponse>} items 
@@ -204,11 +165,7 @@ export const comment = (() => {
             comments.innerHTML = card.renderLoading().repeat(pagination.getPer());
         }
 
-        return request(HTTP_GET, `/api/v2/comment?per=${pagination.getPer()}&next=${pagination.getNext()}&lang=${lang.getLanguage()}`)
-            .token(session.getToken())
-            .withCache(1000 * 30)
-            .withForceCache()
-            .send(dto.getCommentsResponseV2)
+        return localComments.getComments(pagination.getPer(), pagination.getNext())
             .then(async (res) => {
                 comments.setAttribute('data-loading', 'false');
 
@@ -216,19 +173,16 @@ export const comment = (() => {
                     await gif.remove(u);
                 }
 
-                if (res.data.lists.length === 0) {
+                if (res.lists.length === 0) {
                     comments.innerHTML = onNullComment();
-                    return res;
+                    return { data: res };
                 }
 
-                const flatten = (ii) => ii.flatMap((i) => [i.uuid, ...flatten(i.comments)]);
-                lastRender.splice(0, lastRender.length, ...flatten(res.data.lists));
-                showHide.set('hidden', traverse(res.data.lists, showHide.get('hidden')));
+                const flatten = (ii) => ii.flatMap((i) => [i.uuid, ...flatten(i.comments || [])]);
+                lastRender.splice(0, lastRender.length, ...flatten(res.lists));
+                showHide.set('hidden', traverse(res.lists, showHide.get('hidden')));
 
-                let data = await card.renderContentMany(res.data.lists);
-                if (res.data.lists.length < pagination.getPer()) {
-                    data += onNullComment();
-                }
+                let data = await card.renderContentMany(res.lists);
 
                 util.safeInnerHTML(comments, data);
 
@@ -236,14 +190,10 @@ export const comment = (() => {
                     like.addListener(u);
                 });
 
-                return res;
+                return { data: res };
             })
             .then(async (res) => {
                 comments.dispatchEvent(new Event('undangan.comment.result'));
-
-                if (res.data.lists && session.isAdmin()) {
-                    await Promise.all(res.data.lists.map((v) => fetchTracker(v)));
-                }
 
                 pagination.setTotal(res.data.count);
                 comments.dispatchEvent(new Event('undangan.comment.done'));
@@ -256,7 +206,7 @@ export const comment = (() => {
      * @returns {Promise<void>}
      */
     const remove = async (button) => {
-        if (!util.ask('Are you sure?')) {
+        if (!util.ask('Вы уверены?')) {
             return;
         }
 
@@ -271,10 +221,8 @@ export const comment = (() => {
         const likes = like.getButtonLike(id);
         likes.disabled = true;
 
-        const status = await request(HTTP_DELETE, '/api/comment/' + owns.get(id))
-            .token(session.getToken())
-            .send(dto.statusResponse)
-            .then((res) => res.data.status);
+        // Используем локальное хранилище вместо API
+        const status = await localComments.deleteComment(id);
 
         if (!status) {
             btn.restore();
@@ -333,7 +281,7 @@ export const comment = (() => {
         }
 
         if (!gifIsOpen && form.value?.trim().length === 0) {
-            util.notify('Comments cannot be empty.').warning();
+            util.notify('Комментарий не может быть пустым.').warning();
             return;
         }
 
@@ -348,11 +296,14 @@ export const comment = (() => {
 
         const btn = util.disableButton(button);
 
-        const status = await request(HTTP_PUT, `/api/comment/${owns.get(id)}?lang=${lang.getLanguage()}`)
-            .token(session.getToken())
-            .body(dto.updateCommentRequest(presence ? isPresent : null, gifIsOpen ? null : form.value, gifId))
-            .send(dto.statusResponse)
-            .then((res) => res.data.status);
+        // Используем локальное хранилище вместо API
+        const gifUrl = gifIsOpen && gifId ? await gif.get(gifId) : null;
+        const status = await localComments.updateComment(
+            id,
+            presence ? isPresent : null,
+            gifIsOpen ? null : form.value,
+            gifUrl
+        );
 
         if (form) {
             form.disabled = false;
@@ -423,10 +374,11 @@ export const comment = (() => {
         const id = button.getAttribute('data-uuid');
 
         const name = document.getElementById('form-name');
-        const nameValue = name.value;
+        const name2 = document.getElementById('form-name-2');
+        let nameValue = name.value;
 
         if (nameValue.length === 0) {
-            util.notify('Name cannot be empty.').warning();
+            util.notify('Имя не может быть пустым.').warning();
 
             if (id) {
                 // scroll to form.
@@ -435,9 +387,14 @@ export const comment = (() => {
             return;
         }
 
+        // Если указано имя спутника, объединяем
+        if (name2 && name2.value.trim().length > 0) {
+            nameValue = `${nameValue} и ${name2.value.trim()}`;
+        }
+
         const presence = document.getElementById('form-presence');
         if (!id && presence && presence.value === '0') {
-            util.notify('Please select your attendance status.').warning();
+            util.notify('Пожалуйста, выберите статус присутствия.').warning();
             return;
         }
 
@@ -446,7 +403,7 @@ export const comment = (() => {
         const gifCancel = gif.buttonCancel(id);
 
         if (gifIsOpen && !gifId) {
-            util.notify('Gif cannot be empty.').warning();
+            util.notify('GIF не может быть пустым.').warning();
             return;
         }
 
@@ -455,10 +412,7 @@ export const comment = (() => {
         }
 
         const form = document.getElementById(`form-${id ? `inner-${id}` : 'comment'}`);
-        if (!gifIsOpen && form.value?.trim().length === 0) {
-            util.notify('Comments cannot be empty.').warning();
-            return;
-        }
+        // Комментарий теперь необязателен — можно просто подтвердить присутствие
 
         if (!id && name && !session.isAdmin()) {
             name.disabled = true;
@@ -482,17 +436,27 @@ export const comment = (() => {
 
         if (!session.isAdmin()) {
             const info = storage('information');
-            info.set('name', nameValue);
+            info.set('name', name.value);  // ← store only the first name field value
+
+            if (name2 && name2.value.trim().length > 0) {
+                info.set('name2', name2.value.trim());
+            }
 
             if (!id) {
                 info.set('presence', isPresence);
             }
         }
 
-        const response = await request(HTTP_POST, `/api/comment?lang=${lang.getLanguage()}`)
-            .token(session.getToken())
-            .body(dto.postCommentRequest(id, nameValue, isPresence, gifIsOpen ? null : form.value, gifId))
-            .send(dto.getCommentResponse);
+        // Используем локальное хранилище вместо API
+        const gifUrl = gifIsOpen && gifId ? await gif.get(gifId) : null;
+        const commentText = gifIsOpen ? null : (form.value?.trim().length > 0 ? form.value : '');
+        const response = await localComments.addComment(
+            nameValue,
+            isPresence,
+            commentText,
+            gifUrl,
+            id
+        );
 
         if (name) {
             name.disabled = false;
@@ -516,11 +480,11 @@ export const comment = (() => {
 
         btn.restore();
 
-        if (!response || response.code !== HTTP_STATUS_CREATED) {
+        if (!response) {
             return;
         }
 
-        owns.set(response.data.uuid, response.data.own);
+        owns.set(response.uuid, response.own);
 
         if (form) {
             form.value = null;
@@ -542,21 +506,21 @@ export const comment = (() => {
                 comments.lastElementChild.remove();
             }
 
-            response.data.is_parent = true;
-            response.data.is_admin = session.isAdmin();
-            comments.insertAdjacentHTML('afterbegin', await card.renderContentMany([response.data]));
+            response.is_parent = true;
+            response.is_admin = session.isAdmin();
+            comments.insertAdjacentHTML('afterbegin', await card.renderContentMany([response]));
             comments.scrollIntoView();
         }
 
         if (id) {
-            showHide.set('hidden', showHide.get('hidden').concat([dto.commentShowMore(response.data.uuid, true)]));
+            showHide.set('hidden', showHide.get('hidden').concat([dto.commentShowMore(response.uuid, true)]));
             showHide.set('show', showHide.get('show').concat([id]));
 
             removeInnerForm(id);
 
-            response.data.is_parent = false;
-            response.data.is_admin = session.isAdmin();
-            document.getElementById(`reply-content-${id}`).insertAdjacentHTML('beforeend', await card.renderContentSingle(response.data));
+            response.is_parent = false;
+            response.is_admin = session.isAdmin();
+            document.getElementById(`reply-content-${id}`).insertAdjacentHTML('beforeend', await card.renderContentSingle(response));
 
             const anchorTag = document.getElementById(`button-${id}`).querySelector('a');
             if (anchorTag) {
@@ -567,15 +531,15 @@ export const comment = (() => {
                 anchorTag.remove();
             }
 
-            const uuids = [response.data.uuid];
+            const uuids = [response.uuid];
             const readMoreElement = document.createRange().createContextualFragment(card.renderReadMore(id, anchorTag ? anchorTag.getAttribute('data-uuids').split(',').concat(uuids) : uuids));
 
             const buttonLike = like.getButtonLike(id);
             buttonLike.parentNode.insertBefore(readMoreElement, buttonLike);
         }
 
-        like.addListener(response.data.uuid);
-        lastRender.push(response.data.uuid);
+        like.addListener(response.uuid);
+        lastRender.push(response.uuid);
     };
 
     /**

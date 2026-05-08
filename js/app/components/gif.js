@@ -223,7 +223,7 @@ export const gif = (() => {
 
         <div class="d-flex mb-3" id="gif-search-nav-${uuid}">
             <button class="btn btn-secondary btn-sm rounded-4 shadow-sm me-1 my-1" onclick="undangan.comment.gif.back(this, '${uuid}')" data-offline-disabled="false"><i class="fa-solid fa-arrow-left"></i></button>
-            <input dir="auto" type="text" name="gif-search" id="gif-search-${uuid}" autocomplete="on" class="form-control shadow-sm rounded-4" placeholder="Search for a GIF on Tenor" data-offline-disabled="false">
+            <input dir="auto" type="text" name="gif-search" id="gif-search-${uuid}" autocomplete="on" class="form-control shadow-sm rounded-4" placeholder="Поиск GIF на Tenor" data-offline-disabled="false">
         </div>
 
         <div class="position-relative">

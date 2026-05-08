@@ -12,7 +12,8 @@ html {
 }
 
 .font-esthetic {
-    font-family: 'Sacramento', cursive !important;
+    font-family: 'Marck Script', 'Cormorant Garamond', cursive !important;
+    font-weight: 400;
 }
 
 .font-arabic {
@@ -25,6 +26,16 @@ html {
     max-width: 100%;
     max-height: 100%;
     object-fit: cover;
+    object-position: center center;
+}
+
+/* Совместные / полноростовые кадры в круге: иначе cover режет головы по верху */
+.img-center-crop--duo {
+    object-position: center 12%;
+}
+
+.img-center-crop--portrait {
+    object-position: center 22%;
 }
 
 html[data-bs-theme="dark"] .btn-transparent {

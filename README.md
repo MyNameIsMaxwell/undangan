@@ -1,70 +1,173 @@
-# 💌 Template website undangan pernikahan sederhana
+# 💌 Свадебное приглашение
 
-![Thumbnail](/assets/images/banner.webp)
+Веб-приложение для электронных свадебных приглашений с панелью управления.
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/cef32dbf-f26f-4865-84a9-b85a439c9994/deploy-status)](https://app.netlify.com/sites/ulems/deploys)
-[![Hits](https://dikit.my.id/0b3y8q)](https://cie.my.id)
-[![GitHub repo size](https://img.shields.io/github/repo-size/dewanakl/undangan?color=brightgreen)](https://shields.io)
-[![GitHub License](https://img.shields.io/github/license/dewanakl/undangan?color=brightgreen)](https://shields.io)
+## 🛠 Технологии
 
-## 🚀 Demo
-Untuk kamu yang ingin melihat demo terlebih dahulu:
+- **Frontend:** HTML5, CSS3, JavaScript (ES Modules), Bootstrap 5
+- **Backend:** Express.js (Node.js)
+- **База данных:** SQLite (через better-sqlite3)
+- **Сборка:** esbuild
 
-[https://ulems.my.id/?to=Teman teman semua](https://ulems.my.id/?to=Teman%20teman%20semua)
+## 🚀 Быстрый старт
 
-## 📦 Documentation
+### 1. Установка зависимостей
 
-* Jalankan perintah `npm install`, lalu `npm run dev`, dan buka `http://localhost:8080`.
-* Ubah isi file `index.html` sesuai keinginanmu.
-* Jika tidak ingin menggunakan **fitur komentar**, hapus atribut `data-url` dan `data-key` di elemen `<body>` pada index.html.
-* Sesuaikan `data-url` pada `<body>` di index dan dashboard sesuai dengan URL backend (jika kamu meng-hosting sendiri).
-* Sesuaikan juga `data-key` di index dengan access key yang bisa kamu ambil dari dashboard.
-* Jika ingin menggunakan GIF, dapatkan Tenor API key di [developers.google.com/tenor](https://developers.google.com/tenor/guides/quickstart).
-* Untuk deployment, jalankan `npm run build:public`. Folder `public` adalah yang akan kamu upload.
-* Untuk backend self-hosting, lihat penjelasan di bawah, atau gunakan **trial API** secara gratis.
+```bash
+npm install
+```
 
-> Undangan ini hanya menggunakan HTML, CSS, dan JavaScript biasa. NPM digunakan agar file JavaScript bisa langsung dieksekusi (bukan bertipe module lagi).
+### 2. Сборка фронтенда
 
-> Jika tetap ingin tanpa NPM, ubah `src="./dist/guest.js"` menjadi `src="./js/guest.js" type="module"` pada tag `<head>` di index dan dashboard.html, dengan risiko glitch tema di awal loading.
+```bash
+npm run build
+```
 
-> Jika kamu punya pertanyaan, gunakan fitur `discussions` agar bisa dibaca juga oleh teman-teman lainnya.
+### 3. Запуск сервера
 
-> [!WARNING]  
-> Gunakan versi 3.14.0, untuk versi 4 masih tahap pengembangan dan berpotensi teredapat bug 🐛
+```bash
+npm start
+```
 
-## 🔥 Deployment API
+Или одной командой (сборка + запуск):
 
-- Video\
-    otw
+```bash
+npm run server
+```
 
-- Presentation
-    [https://docs.google.com/presentation](https://docs.google.com/presentation/d/1EY2YmWdZUI7ASoo0f2wvU7ec_Yt0uZanYa8YLbfNysk/edit)
+После запуска:
+- 🌐 **Приглашение:** http://localhost:3000
+- 📋 **Админ-панель:** http://localhost:3000/dashboard
 
-## ⏰ Trial API
-Untuk kamu yang ingin mencoba secara gratis:
+## 👤 Админ-панель
 
-[https://trial.ulems.my.id](https://trial.ulems.my.id)
+При **первом входе** в админ-панель (`/dashboard`) вы создаёте аккаунт администратора — введите любой email и пароль (минимум 8 символов). Эти данные сохраняются в базе данных и используются для последующих входов.
 
-## ⚙️ Tech stack
+### Возможности панели
 
-- Bootstrap 5.3.8
-- AOS 2.3.4
-- Fontawesome 7.1.0
-- Canvas Confetti 1.9.3
-- Google Fonts
-- Vanilla JS
+- 📊 **Статистика**: количество комментариев, лайков, подтверждений присутствия
+- 💬 **Управление комментариями**: просмотр, удаление
+- ⚙️ **Настройки**: имя, часовой пояс, GIF (Tenor API), переключатели функций
+- 📥 **Экспорт**: скачивание всех комментариев в CSV-файл
+- 🔐 **Безопасность**: смена пароля
 
-## 🎨 Credit
-All visual assets in this project are sourced from Pixabay.
+## 💬 Управление комментариями
 
-## 🤝 Contributing
+Все комментарии хранятся в файле `database.sqlite` (SQLite база данных). Этот файл создаётся автоматически при первом запуске сервера.
 
-I'm very open to those of you who want to contribute to the undangan!
+### Где хранятся данные
 
-## 🐞 Security Vulnerabilities
+| Данные | Расположение |
+|--------|-------------|
+| Комментарии | `database.sqlite` → таблица `comments` |
+| Лайки | `database.sqlite` → таблица `likes` |
+| Настройки | `database.sqlite` → таблица `config` |
+| Администратор | `database.sqlite` → таблица `admin` |
 
-If you find any security vulnerabilities in this undangan, please email DKL via [dewanakretarta29@gmail.com](mailto:dewanakretarta29@gmail.com).
+### Как удалить все комментарии
 
-## 📜 License
+**Вариант 1:** Через админ-панель — удаляйте по одному.
 
-Undangan is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Вариант 2:** Остановите сервер, удалите файл `database.sqlite` и запустите снова:
+
+```bash
+# Остановите сервер (Ctrl+C)
+del database.sqlite
+npm start
+```
+
+### Как экспортировать комментарии
+
+В админ-панели нажмите кнопку **«Скачать CSV»** — будет загружен файл со всеми комментариями.
+
+## 🔗 Ссылки для гостей
+
+Имена гостей подставляются автоматически через URL-параметры:
+
+```
+http://localhost:3000/?to=Иван
+http://localhost:3000/?to=Иван&to2=Мария
+```
+
+| Параметр | Описание |
+|----------|----------|
+| `to` | Имя первого гостя |
+| `to2` | Имя второго гостя (необязательно) |
+
+Если указан `to2`, на странице появится второе поле для имени.
+
+## 🖼 Как изменить фотографии
+
+Замените файлы в папке `assets/images/`:
+
+| Файл | Описание | Рекомендации |
+|------|----------|-------------|
+| `bg.webp` | Фон главной страницы | 1920×1080, WebP |
+| `banner.webp` | Баннер (левая панель на ПК) | 800×1200, WebP |
+| `cowo.webp` | Фото жениха | 400×400, WebP, квадрат |
+| `cewe.webp` | Фото невесты | 400×400, WebP, квадрат |
+| `placeholder.webp` | Заглушка для галереи | Любой размер |
+
+### Видео
+
+Замените файл `assets/video/265501_tiny.mp4` своим видео (формат MP4).
+
+### Галерея
+
+Путь к фотографиям галереи указан в `index.html` в атрибутах `data-src`. Добавьте свои изображения в `assets/images/` и обновите пути.
+
+## ⚙️ Настройки приложения
+
+### Дата свадьбы
+
+В `index.html` найдите атрибут `data-time` на теге `<body>`:
+
+```html
+<body data-time="2026-07-18 10:00:00" ...>
+```
+
+### Порт сервера
+
+По умолчанию сервер запускается на порту 3000. Можно изменить через переменную окружения:
+
+```bash
+PORT=8080 npm start
+```
+
+### GIF-поддержка (Tenor)
+
+Для включения GIF в комментариях получите бесплатный API-ключ Tenor (Google) и введите его в настройках админ-панели.
+
+## 📁 Структура проекта
+
+```
+wedding-invitation/
+├── server.js           # Express-сервер + SQLite
+├── index.html          # Страница приглашения
+├── dashboard.html      # Админ-панель
+├── database.sqlite     # БД (создаётся автоматически)
+├── package.json        # Зависимости
+├── assets/
+│   ├── images/         # Фотографии
+│   └── video/          # Видео
+├── css/
+│   ├── guest.css       # Стили приглашения
+│   └── admin.css       # Стили админки
+├── js/                 # Исходный код (ES Modules)
+│   ├── guest.js        # Точка входа — приглашение
+│   ├── admin.js        # Точка входа — админка
+│   ├── app/            # Модули приложения
+│   ├── common/         # Общие утилиты
+│   ├── connection/     # Сетевые запросы, кэш
+│   └── libs/           # Библиотеки
+└── dist/               # Собранные бандлы
+```
+
+## 📝 Скрипты
+
+| Команда | Описание |
+|---------|----------|
+| `npm start` | Запуск сервера |
+| `npm run server` | Сборка + запуск |
+| `npm run build` | Сборка фронтенда |
+| `npm run dev` | Режим разработки (esbuild serve) |

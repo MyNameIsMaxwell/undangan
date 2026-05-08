@@ -3,6 +3,7 @@ import { storage } from '../../common/storage.js';
 import { session } from '../../common/session.js';
 import { tapTapAnimation } from '../../libs/confetti.js';
 import { request, HTTP_PATCH, HTTP_POST, HTTP_STATUS_CREATED } from '../../connection/request.js';
+import { localComments } from '../../common/local-comments.js';
 
 export const like = (() => {
 
@@ -35,41 +36,27 @@ export const like = (() => {
         }
 
         if (likes.has(id)) {
-            await request(HTTP_PATCH, '/api/comment/' + likes.get(id))
-                .token(session.getToken())
-                .send(dto.statusResponse)
-                .then((res) => {
-                    if (res.data.status) {
-                        likes.unset(id);
+            // Убираем лайк
+            localComments.decrementLikes(id);
+            likes.unset(id);
 
-                        heart.classList.remove('fa-solid', 'text-danger');
-                        heart.classList.add('fa-regular');
+            heart.classList.remove('fa-solid', 'text-danger');
+            heart.classList.add('fa-regular');
 
-                        info.setAttribute('data-count-like', String(count - 1));
-                    }
-                })
-                .finally(() => {
-                    info.innerText = info.getAttribute('data-count-like');
-                    button.disabled = false;
-                });
+            info.setAttribute('data-count-like', String(count - 1));
+            info.innerText = info.getAttribute('data-count-like');
+            button.disabled = false;
         } else {
-            await request(HTTP_POST, '/api/comment/' + id)
-                .token(session.getToken())
-                .send(dto.uuidResponse)
-                .then((res) => {
-                    if (res.code === HTTP_STATUS_CREATED) {
-                        likes.set(id, res.data.uuid);
+            // Добавляем лайк
+            localComments.incrementLikes(id);
+            likes.set(id, id); // Сохраняем id для отслеживания
 
-                        heart.classList.remove('fa-regular');
-                        heart.classList.add('fa-solid', 'text-danger');
+            heart.classList.remove('fa-regular');
+            heart.classList.add('fa-solid', 'text-danger');
 
-                        info.setAttribute('data-count-like', String(count + 1));
-                    }
-                })
-                .finally(() => {
-                    info.innerText = info.getAttribute('data-count-like');
-                    button.disabled = false;
-                });
+            info.setAttribute('data-count-like', String(count + 1));
+            info.innerText = info.getAttribute('data-count-like');
+            button.disabled = false;
         }
     };
 
