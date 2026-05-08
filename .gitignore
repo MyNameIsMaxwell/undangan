@@ -7,3 +7,12 @@ public
 database.sqlite
 database.sqlite-wal
 database.sqlite-shm
+
+# Секреты и локальные env (на сервер — через переменные окружения или файл вне git)
+.env
+.env.*
+!.env.example
+
+# Личные фото галереи и портреты — в git не кладём; на VPS копировать вручную в каталог photo/
+
+photo/
