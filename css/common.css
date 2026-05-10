@@ -1,6 +1,8 @@
 html {
     scroll-behavior: smooth !important;
-    width: 100vw !important;
+    /* 100vw включает ширину полосы прокрутки → лишний горизонтальный/визуальный скролл */
+    width: 100%;
+    max-width: 100%;
 }
 
 body {
@@ -8,6 +10,12 @@ body {
     padding: 0 !important;
     width: 100% !important;
     overflow-x: hidden !important;
+}
+
+/* overflow-x-hidden у Bootstrap задаёт overflow-y: auto (правило согласования осей) — в блоке появляется «внутренний» скролл */
+.overflow-x-clip-safe {
+    overflow-x: clip;
+    overflow-y: visible;
 }
 
 i {
