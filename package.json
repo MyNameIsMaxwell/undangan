@@ -7,7 +7,8 @@
         "htmlhint": "^1.7.1",
         "madge": "^8.0.0",
         "stylelint": "^16.25.0",
-        "stylelint-config-recommended": "^17.0.0"
+        "stylelint-config-recommended": "^17.0.0",
+        "sharp": "^0.34.2"
     },
     "scripts": {
         "lint:js": "eslint js",
@@ -17,7 +18,8 @@
         "build": "npx esbuild js/*.js --bundle --minify --outdir=dist",
         "build:public": "npm run build && node -e \"const fs = require('fs-extra'); fs.ensureDir('public').then(() => Promise.all(['assets', 'css', 'dist', 'index.html', 'dashboard.html', 'server.js'].map((f) => fs.copy(f, 'public/' + f)))).then(() => console.log('✅ Successfully!'));\"",
         "start": "node server.js",
-        "server": "npm run build && node server.js"
+        "server": "npm run build && node server.js",
+        "photos:compress": "node scripts/compress-photos.mjs"
     },
     "dependencies": {
         "better-sqlite3": "^11.10.0",

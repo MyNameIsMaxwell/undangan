@@ -16,3 +16,4 @@ database.sqlite-shm
 # Личные фото галереи и портреты — в git не кладём; на VPS копировать вручную в каталог photo/
 
 photo/
+photo-fullsize/
