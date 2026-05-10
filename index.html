@@ -87,14 +87,15 @@
             <div class="position-relative bg-white-black d-flex justify-content-center align-items-center vh-100">
                 <div class="d-flex position-absolute w-100 h-100">
                     <div class="position-relative overflow-hidden vw-100">
+                        <!-- src: прозрачный 1×1 — реальный файл только в data-src (иначе браузер и скрипт качают фото дважды) -->
                         <div class="position-absolute h-100 w-100 slide-desktop" style="opacity: 0;">
-                            <img src="./photo/1U3A9767.jpg" data-src="./photo/1U3A9767.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" fetchpriority="high" decoding="async" data-src="./photo/1U3A9767.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
                         </div>
                         <div class="position-absolute h-100 w-100 slide-desktop" style="opacity: 0;">
-                            <img src="./photo/1U3A9791.jpg" data-src="./photo/1U3A9791.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" decoding="async" data-src="./photo/1U3A9791.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
                         </div>
                         <div class="position-absolute h-100 w-100 slide-desktop" style="opacity: 0;">
-                            <img src="./photo/IMG_0536.jpg" data-src="./photo/IMG_0536.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" decoding="async" data-src="./photo/IMG_0536.jpg" alt="bg" class="bg-cover-home" style="mask-image: none; opacity: 30%;">
                         </div>
                     </div>
                 </div>
@@ -113,12 +114,12 @@
 
                 <!-- Home -->
                 <section id="home" class="bg-light-dark position-relative overflow-hidden p-0 m-0">
-                    <img src="./photo/IMG_20240616_211952.jpg" data-src="./photo/IMG_20240616_211952.jpg" alt="bg" class="position-absolute opacity-25 top-50 start-50 translate-middle bg-cover-home">
+                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" fetchpriority="high" decoding="async" data-src="./photo/IMG_20240616_211952.jpg" alt="bg" class="position-absolute opacity-25 top-50 start-50 translate-middle bg-cover-home">
 
                     <div class="position-relative text-center bg-overlay-auto" style="background-color: unset;">
                         <h1 class="font-esthetic pt-5 pb-4" style="font-size: 2.75rem;">Приглашение на свадьбу</h1>
 
-                        <img src="./photo/IMG_6904.JPG" data-src="./photo/IMG_6904.JPG" alt="Максим и Юлия" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--duo rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" fetchpriority="high" decoding="async" data-src="./photo/IMG_6904.JPG" alt="Максим и Юлия" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--duo rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
 
                         <h2 class="font-esthetic my-4" style="font-size: 3rem;">Максим &amp; Юлия</h2>
                         <p class="my-2" style="font-size: 1.25rem;">Суббота, 18 июля 2026</p>
@@ -160,7 +161,7 @@
                             </div>
 
                             <div data-aos="fade-right" data-aos-duration="2000" class="pb-1">
-                                <img src="./photo/Максим.jpg" data-src="./photo/Максим.jpg" alt="Максим" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--portrait rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/Максим.jpg" alt="Максим" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--portrait rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
                                 <h2 class="font-esthetic m-0" style="font-size: 2.5rem;">Максим</h2>
                             </div>
 
@@ -183,7 +184,7 @@
                             </div>
 
                             <div data-aos="fade-left" data-aos-duration="2000" class="pb-1">
-                                <img src="./photo/Юля.jpg" data-src="./photo/Юля.jpg" alt="Юлия" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--portrait rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/Юля.jpg" alt="Юлия" onclick="undangan.guest.modal(this)" class="img-center-crop img-center-crop--portrait rounded-circle border border-3 border-light shadow my-4 mx-auto cursor-pointer">
                                 <h2 class="font-esthetic m-0" style="font-size: 2.5rem;">Юлия</h2>
                             </div>
 
@@ -315,13 +316,13 @@
 
                                 <div class="carousel-inner rounded-4">
                                     <div class="carousel-item active">
-                                        <img src="./photo/IMG_3206.JPG" data-src="./photo/IMG_3206.JPG" alt="Галерея 1" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" decoding="async" data-src="./photo/IMG_3206.JPG" alt="Галерея 1" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                     <div class="carousel-item">
-                                        <img src="./photo/IMG_3208.JPG" data-src="./photo/IMG_3208.JPG" alt="Галерея 2" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/IMG_3208.JPG" alt="Галерея 2" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                     <div class="carousel-item">
-                                        <img src="./photo/IMG_1662.JPG" data-src="./photo/IMG_1662.JPG" alt="Галерея 3" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/IMG_1662.JPG" alt="Галерея 3" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                 </div>
 
@@ -345,13 +346,13 @@
 
                                 <div class="carousel-inner rounded-4">
                                     <div class="carousel-item active">
-                                        <img src="./photo/IMG_5218.jpg" data-src="./photo/IMG_5218.jpg" alt="Галерея 4" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" decoding="async" data-src="./photo/IMG_5218.jpg" alt="Галерея 4" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                     <div class="carousel-item">
-                                        <img src="./photo/IMG_3716.jpg" data-src="./photo/IMG_3716.jpg" alt="Галерея 5" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/IMG_3716.jpg" alt="Галерея 5" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                     <div class="carousel-item">
-                                        <img src="./photo/IMG_4224.jpg" data-src="./photo/IMG_4224.jpg" alt="Галерея 6" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
+                                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/IMG_4224.jpg" alt="Галерея 6" class="d-block img-fluid cursor-pointer" onclick="undangan.guest.modal(this)">
                                     </div>
                                 </div>
 
@@ -487,7 +488,7 @@
             <div class="d-flex flex-column text-center">
                 <h2 class="font-esthetic mb-4" style="font-size: 2.5rem;">Приглашение на свадьбу</h2>
 
-                <img src="./photo/IMG_1752.jpg" data-src="./photo/IMG_1752.jpg" alt="Максим и Юлия" class="img-center-crop img-center-crop--duo rounded-circle border border-3 border-light shadow mb-4 mx-auto">
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy" decoding="async" data-src="./photo/IMG_1752.jpg" alt="Максим и Юлия" class="img-center-crop img-center-crop--duo rounded-circle border border-3 border-light shadow mb-4 mx-auto">
 
                 <h2 class="font-esthetic mb-4" style="font-size: 3rem;">Максим &amp; Юлия</h2>
                 <div id="guest-name" data-message="Уважаемый(ая)"></div>

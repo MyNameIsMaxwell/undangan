@@ -362,7 +362,10 @@ export const guest = (() => {
             vid.load();
             img.load();
             aud.load();
-            lib.load({ confetti: document.body.getAttribute('data-confetti') === 'true' });
+            lib.load({
+                confetti: document.body.getAttribute('data-confetti') === 'true',
+                additionalFont: false,
+            });
         }
 
         if (token && token.length > 0) {
@@ -389,7 +392,10 @@ export const guest = (() => {
 
                 vid.load();
                 aud.load();
-                lib.load({ confetti: serverConfig.is_confetti_animation });
+                lib.load({
+                    confetti: serverConfig.is_confetti_animation,
+                    additionalFont: false,
+                });
 
                 comment.show()
                     .then(() => progress.complete('comment'))

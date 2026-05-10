@@ -6,8 +6,8 @@ import { cache } from '../connection/cache.js';
  */
 const loadAOS = (c) => {
 
-    const urlCss = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css';
-    const urlJs = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js';
+    const urlCss = './assets/vendor/und-aos.css';
+    const urlJs = './assets/vendor/und-aos.js';
 
     /**
      * @returns {Promise<void>}
@@ -48,7 +48,7 @@ const loadAOS = (c) => {
  * @returns {Promise<void>}
  */
 const loadConfetti = (c) => {
-    const url = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js';
+    const url = './assets/vendor/und-confetti.js';
 
     return c.get(url).then((uri) => new Promise((res, rej) => {
         const sc = document.createElement('script');

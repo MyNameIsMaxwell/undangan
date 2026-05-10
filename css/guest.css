@@ -86,7 +86,16 @@ html[data-bs-theme="dark"] .bg-white-black {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* cover без позиции режет портреты по центру — «съедает» верх головы; смещаем акцент вверх */
+    object-position: center 22%;
     mask-image: linear-gradient(0.5turn, transparent, black 40%, black 60%, transparent);
+}
+
+/* Узкая колонка слева на десктопе — сильнее вертикальный кроп */
+@media (min-width: 576px) {
+    #root > .d-sm-block .bg-cover-home {
+        object-position: center 18%;
+    }
 }
 
 .width-loading {
