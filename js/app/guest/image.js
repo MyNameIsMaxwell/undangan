@@ -34,15 +34,20 @@ export const image = (() => {
      * @param {string} src 
      * @returns {Promise<void>}
      */
-    const appendImage = (el, src) => loadedImage(src).then((img) => {
-        el.width = img.naturalWidth;
-        el.height = img.naturalHeight;
-        el.classList.remove('opacity-0');
-        el.src = img.src;
-        img.remove();
+    const appendImage = (el, src) => loadedImage(src)
+        .then((img) => {
+            el.width = img.naturalWidth;
+            el.height = img.naturalHeight;
+            el.classList.remove('opacity-0');
+            el.src = img.src;
+            img.remove();
 
-        progress.complete('image');
-    });
+            progress.complete('image');
+        })
+        .catch((err) => {
+            console.error('Не удалось показать изображение:', el.getAttribute('data-src') ?? el.src, err);
+            progress.invalid('image');
+        });
 
     /**
      * @param {HTMLImageElement} el 
