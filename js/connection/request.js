@@ -19,16 +19,56 @@ export const defaultJSON = {
 
 export const cacheRequest = 'request';
 
+/**
+ * @param {string|URL|Request} input
+ * @returns {string}
+ */
+const cacheKeyOf = (input) => {
+    if (typeof input === 'string') {
+        return input;
+    }
+    if (input instanceof URL) {
+        return input.href;
+    }
+    if (typeof Request !== 'undefined' && input instanceof Request) {
+        return input.url;
+    }
+    return String(input);
+};
+
+/**
+ * In-memory stand-in for the Cache API (unavailable or limited outside a secure context).
+ * @returns {Pick<Cache, 'match'|'put'|'delete'>}
+ */
+const createMemoryCache = () => {
+    /** @type {Map<string, Response>} */
+    const store = new Map();
+
+    return {
+        match(input) {
+            const res = store.get(cacheKeyOf(input));
+            return Promise.resolve(res ?? undefined);
+        },
+        put(input, response) {
+            store.set(cacheKeyOf(input), response.clone());
+            return Promise.resolve();
+        },
+        delete(input) {
+            return Promise.resolve(store.delete(cacheKeyOf(input)));
+        },
+    };
+};
+
 export const pool = (() => {
     /**
-     * @type {Map<string, Cache>|null}
+     * @type {Map<string, Cache|ReturnType<typeof createMemoryCache>>|null}
      */
     let cachePool = null;
 
     return {
         /**
          * @param {string} name
-         * @returns {Cache}
+         * @returns {Cache|ReturnType<typeof createMemoryCache>}
          */
         getInstance: (name) => {
             if (!cachePool || !cachePool.has(name)) {
@@ -38,27 +78,34 @@ export const pool = (() => {
             return cachePool.get(name);
         },
         /**
-         * @param {string} name 
+         * @param {string} name
          * @returns {Promise<void>}
          */
         restart: async (name) => {
             cachePool.set(name, null);
             cachePool.delete(name);
-            await window.caches.delete(name);
-            await window.caches.open(name).then((c) => cachePool.set(name, c));
+            if (window.caches) {
+                await window.caches.delete(name);
+                await window.caches.open(name).then((c) => cachePool.set(name, c));
+            } else {
+                cachePool.set(name, createMemoryCache());
+            }
         },
         /**
          * @param {function} callback
-         * @param {string[]} lists 
+         * @param {string[]} lists
          * @returns {void}
          */
         init: (callback, lists = []) => {
-            if (!window.isSecureContext) {
-                throw new Error('this application required secure context');
-            }
-
             cachePool = new Map();
-            Promise.all(lists.concat([cacheRequest]).map((v) => window.caches.open(v).then((c) => cachePool.set(v, c)))).then(() => callback());
+            const openOne = (v) => {
+                if (window.caches) {
+                    return window.caches.open(v).then((c) => cachePool.set(v, c));
+                }
+                cachePool.set(v, createMemoryCache());
+                return Promise.resolve();
+            };
+            Promise.all(lists.concat([cacheRequest]).map(openOne)).then(() => callback());
         },
     };
 })();

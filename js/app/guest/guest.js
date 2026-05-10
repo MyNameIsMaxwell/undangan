@@ -417,17 +417,13 @@ export const guest = (() => {
 
         window.addEventListener('load', () => {
             try {
-                if (window.isSecureContext && window.caches) {
-                    pool.init(pageLoaded, [
-                        'image',
-                        'video',
-                        'audio',
-                        'libs',
-                        'gif',
-                    ]);
-                } else {
-                    pageLoaded();
-                }
+                pool.init(pageLoaded, [
+                    'image',
+                    'video',
+                    'audio',
+                    'libs',
+                    'gif',
+                ]);
             } catch {
                 pageLoaded();
             }

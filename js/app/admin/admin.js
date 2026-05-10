@@ -321,11 +321,7 @@ export const admin = (() => {
 
         window.addEventListener('load', () => {
             try {
-                if (window.isSecureContext && window.caches) {
-                    pool.init(pageLoaded, ['gif']);
-                } else {
-                    pageLoaded();
-                }
+                pool.init(pageLoaded, ['gif']);
             } catch {
                 pageLoaded();
             }
