@@ -56,9 +56,93 @@ curl -sI -H "Host: maxjuliawedding.ru" http://127.0.0.1/
 
 База SQLite: файл **`database.sqlite`** в каталоге приложения на VPS — делайте резервные копии.
 
-## HTTPS (опционально, позже)
+## HTTPS (Let’s Encrypt)
 
-Ранее HTTP-01 для Let’s Encrypt мог перехватываться фронтом Beget (`nginx-reuseport`). Варианты: DNS-challenge (TXT), SSL в панели Beget, или поддержка по пробросу `/.well-known/acme-challenge/`.
+Сайт на Node за nginx: сертификат ставится **на nginx** (порты 443 / редирект с 80), приложение на `127.0.0.1:3000` не меняется.
+
+### Шаг 0. Куда реально попадает домен
+
+На VPS выполните:
+
+```bash
+curl -sI http://127.0.0.1/.well-known/acme-challenge/test -H "Host: maxjuliawedding.ru"
+curl -sI http://maxjuliawedding.ru/.well-known/acme-challenge/test
+```
+
+- Если **первый** ответ — `404` от **nginx/1.x (Ubuntu)**, а **второй** — `500` и заголовок вроде **`nginx-reuseport`**, запросы с интернета идут **не на ваш nginx** (фронт Beget). Тогда **HTTP-01** (`certbot --nginx`) с VPS обычно **не сработает** — используйте **DNS-01** (ниже) или спросите поддержку Beget про SSL / проброс `/.well-known/`.
+- Если **оба** ответа согласованы и challenge доходит до вашего nginx — пробуйте **вариант A**.
+
+Установка: `sudo apt install -y certbot python3-certbot-nginx`.
+
+### Вариант A — плагин nginx (HTTP-01)
+
+В конфиге сайта для порта **80** должен быть `proxy_pass` на Node и отдельный `location` для challenge **без** прокси (как в инструкции ранее), либо certbot сам допишет.
+
+```bash
+sudo certbot --nginx -d maxjuliawedding.ru -d www.maxjuliawedding.ru
+```
+
+Дальше certbot добавит `listen 443 ssl` и обновит конфиг. Проверка автообновления:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+### Вариант B — только сертификат по DNS (DNS-01), без HTTP
+
+Подходит, если порт 80 / challenge перехватывается хостингом.
+
+```bash
+sudo certbot certonly --manual --preferred-challenges dns \
+  -d maxjuliawedding.ru -d www.maxjuliawedding.ru
+```
+
+Certbot выведет **имя** и **значение** TXT-записи `_acme-challenge` — добавьте их в DNS у регистратора / Beget, подождите распространения (`dig TXT _acme-challenge.maxjuliawedding.ru`), нажмите Enter в терминале.
+
+Сертификаты окажутся в:
+
+`/etc/letsencrypt/live/maxjuliawedding.ru/fullchain.pem`  
+`/etc/letsencrypt/live/maxjuliawedding.ru/privkey.pem`
+
+Подключите их в nginx (замените путь к `include`, если файлов ещё нет — один раз выполните успешный `certbot` по любому методу или смотрите [документацию certbot](https://eff-certbot.readthedocs.io)):
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name maxjuliawedding.ru www.maxjuliawedding.ru;
+
+    ssl_certificate     /etc/letsencrypt/live/maxjuliawedding.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/maxjuliawedding.ru/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 80;
+    server_name maxjuliawedding.ru www.maxjuliawedding.ru;
+    return 301 https://$host$request_uri;
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo ufw allow 'Nginx Full'
+```
+
+Обновление сертификата по DNS вручную каждые ~90 дней неудобно; для автоматизации нужен **API DNS** регистратора и плагин certbot (например Cloudflare) — смотрите `certbot plugins` и документацию своего DNS.
+
+### После включения HTTPS
+
+Фронтенд уже работает с относительными URL; при прокси с заголовком `X-Forwarded-Proto: https` схема для приложения корректна. Админку открывайте как `https://ваш-домен/dashboard`.
 
 ## Скорость загрузки и фото
 

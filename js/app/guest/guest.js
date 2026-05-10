@@ -3,7 +3,6 @@ import { image } from './image.js';
 import { audio } from './audio.js';
 import { progress } from './progress.js';
 import { util } from '../../common/util.js';
-import { bs } from '../../libs/bootstrap.js';
 import { loader } from '../../libs/loader.js';
 import { theme } from '../../common/theme.js';
 import { lang } from '../../common/language.js';
@@ -210,33 +209,6 @@ export const guest = (() => {
     };
 
     /**
-     * @param {HTMLImageElement} img
-     * @returns {void}
-     */
-    const modal = (img) => {
-        document.getElementById('button-modal-click').setAttribute('href', img.src);
-        document.getElementById('button-modal-download').setAttribute('data-src', img.src);
-
-        const i = document.getElementById('show-modal-image');
-        i.src = img.src;
-        i.width = img.width;
-        i.height = img.height;
-        bs.modal('modal-image').show();
-    };
-
-    /**
-     * @returns {void}
-     */
-    const modalImageClick = () => {
-        document.getElementById('show-modal-image').addEventListener('click', (e) => {
-            const abs = e.currentTarget.parentNode.querySelector('.position-absolute');
-            abs.classList.contains('d-none')
-                ? abs.classList.replace('d-none', 'd-flex')
-                : abs.classList.replace('d-flex', 'd-none');
-        });
-    };
-
-    /**
      * @param {HTMLDivElement} div
      * @returns {void}
      */
@@ -315,7 +287,6 @@ export const guest = (() => {
         animateSvg();
         countDownDate();
         showGuestName();
-        modalImageClick();
         normalizeArabicFont();
         buildGoogleCalendar();
 
@@ -350,10 +321,6 @@ export const guest = (() => {
 
         window.addEventListener('resize', util.debounce(slide));
         document.addEventListener('undangan.progress.done', () => booting());
-        document.addEventListener('hide.bs.modal', () => document.activeElement?.blur());
-        document.getElementById('button-modal-download').addEventListener('click', (e) => {
-            img.download(e.currentTarget.getAttribute('data-src'));
-        });
 
         if (!token || token.length <= 0) {
             document.getElementById('comment')?.remove();
@@ -441,7 +408,6 @@ export const guest = (() => {
             comment,
             guest: {
                 open,
-                modal,
                 showStory,
                 closeInformation,
             },
